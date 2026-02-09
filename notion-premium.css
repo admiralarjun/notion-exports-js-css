@@ -1,15 +1,20 @@
-/* Progress bar */
+/* =====================================================
+   arjun.guru — Minimal Notion Reader Layer (CSS)
+   No Notion overrides. Only our own UI.
+   ===================================================== */
+
+/* ---------- Progress bar ---------- */
 #kb-progress {
   position: fixed;
   top: 0;
   left: 0;
   height: 3px;
-  background: linear-gradient(90deg, #2563eb, #16a34a);
   width: 0%;
-  z-index: 9999;
+  background: linear-gradient(90deg, #2563eb, #16a34a);
+  z-index: 10000;
 }
 
-/* Sidebar */
+/* ---------- Sidebar ---------- */
 #kb-sidebar {
   position: fixed;
   top: 0;
@@ -17,41 +22,47 @@
   width: 240px;
   height: 100vh;
   padding: 0.75rem;
-  background: rgba(255,255,255,0.95);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(6px);
   border-left: 1px solid rgba(0,0,0,0.08);
   font-size: 13px;
   overflow-y: auto;
   z-index: 9998;
+  transition: transform 0.25s ease;
 }
 
 #kb-sidebar.collapsed {
   transform: translateX(100%);
 }
 
-#kb-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+#kb-brand {
+  font-weight: 600;
   margin-bottom: 0.5rem;
 }
 
-#kb-toggle {
-  background: none;
-  border: none;
-  cursor: pointer;
-}
-
+/* ---------- Search ---------- */
 #kb-search {
   width: 100%;
-  padding: 0.35rem;
-  margin-bottom: 0.5rem;
+  padding: 0.35rem 0.45rem;
+  font-size: 13px;
+  margin-bottom: 0.6rem;
 }
 
+/* ---------- TOC ---------- */
 #kb-toc a {
   display: block;
   padding: 2px 0;
+  font-size: 13px;
   color: #444;
   text-decoration: none;
+}
+
+#kb-toc a[data-level="h2"] {
+  padding-left: 8px;
+}
+
+#kb-toc a[data-level="h3"] {
+  padding-left: 16px;
 }
 
 #kb-toc a.active {
@@ -59,9 +70,26 @@
   text-decoration: underline;
 }
 
-/* Mobile */
+/* ---------- Floating toggle button ---------- */
+#kb-fab {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  z-index: 10001;
+  background: #ffffff;
+  border: 1px solid rgba(0,0,0,0.15);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+/* ---------- Mobile ---------- */
 @media (max-width: 900px) {
   #kb-sidebar {
+    display: none;
+  }
+  #kb-fab {
     display: none;
   }
 }

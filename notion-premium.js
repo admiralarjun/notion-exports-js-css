@@ -1,5 +1,6 @@
 /* =====================================================
-   arjun.guru — Minimal Notion Reader Layer (jQuery)
+   arjun.guru — Minimal Notion Reader Layer
+   jQuery + Mark.js
    ===================================================== */
 
 $(function () {
@@ -17,19 +18,20 @@ $(function () {
 
   /* ---------------- Sidebar ---------------- */
   const $sidebar = $(`
-    <aside id="kb-sidebar">
-      <div id="kb-header">
-        <strong>arjun.guru</strong>
-        <button id="kb-toggle">☰</button>
-      </div>
+    <aside id="kb-sidebar" class="collapsed">
+      <div id="kb-brand">arjun.guru</div>
       <input id="kb-search" placeholder="Search this page">
       <nav id="kb-toc"></nav>
     </aside>
   `).appendTo("body");
 
-  /* Toggle sidebar */
-  $("#kb-toggle").on("click", () => {
+  /* ---------------- Floating toggle button ---------------- */
+  const $fab = $('<button id="kb-fab" title="Toggle sidebar">☰</button>')
+    .appendTo("body");
+
+  $fab.on("click", () => {
     $sidebar.toggleClass("collapsed");
+    $fab.text($sidebar.hasClass("collapsed") ? "☰" : "×");
   });
 
   /* ---------------- TOC generation ---------------- */
@@ -38,20 +40,29 @@ $(function () {
 
   $article.find("h1, h2, h3").each(function () {
     const $h = $(this);
+
     if (!$h.attr("id")) {
       $h.attr(
         "id",
-        $h.text().trim().toLowerCase().replace(/[^\w]+/g, "-")
+        $h.text()
+          .trim()
+          .toLowerCase()
+          .replace(/[^\w]+/g, "-")
       );
     }
 
     const level = this.tagName.toLowerCase();
-    const $a = $(`<a data-level="${level}" href="#${$h.attr("id")}">${$h.text()}</a>`);
+    const $a = $(`
+      <a href="#${$h.attr("id")}" data-level="${level}">
+        ${$h.text()}
+      </a>
+    `);
+
     $toc.append($a);
     headings.push(this);
   });
 
-  /* ---------------- Active TOC (IntersectionObserver) ---------------- */
+  /* ---------------- Active TOC tracking ---------------- */
   const observer = new IntersectionObserver(
     entries => {
       entries.forEach(entry => {
@@ -62,12 +73,14 @@ $(function () {
         }
       });
     },
-    { rootMargin: "-40% 0px -55% 0px" }
+    {
+      rootMargin: "-40% 0px -55% 0px"
+    }
   );
 
   headings.forEach(h => observer.observe(h));
 
-  /* ---------------- Search + highlight ---------------- */
+  /* ---------------- Search + highlight (Mark.js) ---------------- */
   const marker = new Mark($article[0]);
 
   $("#kb-search").on("input", function () {
@@ -88,7 +101,9 @@ $(function () {
   });
 
   /* ---------------- Image click zoom ---------------- */
-  $article.find("img").css("cursor", "zoom-in").on("click", function () {
-    window.open(this.src, "_blank");
-  });
+  $article.find("img")
+    .css("cursor", "zoom-in")
+    .on("click", function () {
+      window.open(this.src, "_blank");
+    });
 });
