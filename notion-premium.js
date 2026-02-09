@@ -1,116 +1,94 @@
-/* =========================================================
-   arjun.guru — Notion Premium JS (v1)
-   ========================================================= */
+/* =====================================================
+   arjun.guru — Minimal Notion Reader Layer (jQuery)
+   ===================================================== */
 
-document.addEventListener("DOMContentLoaded", () => {
-  /* ---------- SHELL + SIDEBAR ---------- */
-  const article = document.querySelector("article.page");
-  if (!article) return;
+$(function () {
+  const $article = $("article.page");
+  if (!$article.length) return;
 
-  const shell = document.createElement("div");
-  shell.id = "kb-shell";
+  /* ---------------- Progress bar ---------------- */
+  const $progress = $('<div id="kb-progress"></div>').appendTo("body");
 
-  const sidebar = document.createElement("aside");
-  sidebar.id = "kb-sidebar";
-
-  sidebar.innerHTML = `
-    <div id="kb-brand">arjun<span>.guru</span></div>
-    <div id="kb-controls">
-      <input id="kb-search" placeholder="Search page…" />
-      <div id="kb-toggle">☾</div>
-    </div>
-    <nav id="kb-toc"></nav>
-  `;
-
-  article.parentNode.insertBefore(shell, article);
-  shell.appendChild(sidebar);
-  shell.appendChild(article);
-
-  /* ---------- FOOTER ---------- */
-  const footer = document.createElement("div");
-  footer.id = "kb-footer";
-  footer.innerText = "Powered by arjun.guru";
-  article.appendChild(footer);
-
-  /* ---------- THEME TOGGLE ---------- */
-  const root = document.documentElement;
-  const savedTheme = localStorage.getItem("kb-theme");
-  if (savedTheme) root.classList.toggle("theme-dark", savedTheme === "dark");
-
-  document.getElementById("kb-toggle").onclick = () => {
-    root.classList.toggle("theme-dark");
-    localStorage.setItem(
-      "kb-theme",
-      root.classList.contains("theme-dark") ? "dark" : "light"
-    );
-  };
-
-  /* ---------- PROGRESS BAR ---------- */
-  const bar = document.createElement("div");
-  bar.id = "kb-progress";
-  document.body.appendChild(bar);
-
-  window.addEventListener("scroll", () => {
+  $(window).on("scroll", () => {
     const h = document.documentElement;
-    bar.style.width =
-      (h.scrollTop / (h.scrollHeight - h.clientHeight)) * 100 + "%";
+    const pct = (h.scrollTop / (h.scrollHeight - h.clientHeight)) * 100;
+    $progress.css("width", pct + "%");
   });
 
-  /* ---------- TOC ---------- */
-  const toc = document.getElementById("kb-toc");
-  article.querySelectorAll("h1, h2, h3").forEach(h => {
-    if (!h.id) h.id = h.textContent.replace(/\s+/g, "-").toLowerCase();
-    const a = document.createElement("a");
-    a.href = `#${h.id}`;
-    a.textContent = h.textContent;
-    toc.appendChild(a);
+  /* ---------------- Sidebar ---------------- */
+  const $sidebar = $(`
+    <aside id="kb-sidebar">
+      <div id="kb-header">
+        <strong>arjun.guru</strong>
+        <button id="kb-toggle">☰</button>
+      </div>
+      <input id="kb-search" placeholder="Search this page">
+      <nav id="kb-toc"></nav>
+    </aside>
+  `).appendTo("body");
+
+  /* Toggle sidebar */
+  $("#kb-toggle").on("click", () => {
+    $sidebar.toggleClass("collapsed");
   });
 
-  /* ---------- SEARCH (PAGE ONLY) ---------- */
-  document.getElementById("kb-search").addEventListener("input", e => {
-    const q = e.target.value.toLowerCase();
-    article.querySelectorAll("p, li").forEach(el => {
-      el.style.opacity = el.textContent.toLowerCase().includes(q) ? "1" : "0.3";
+  /* ---------------- TOC generation ---------------- */
+  const $toc = $("#kb-toc");
+  const headings = [];
+
+  $article.find("h1, h2, h3").each(function () {
+    const $h = $(this);
+    if (!$h.attr("id")) {
+      $h.attr(
+        "id",
+        $h.text().trim().toLowerCase().replace(/[^\w]+/g, "-")
+      );
+    }
+
+    const level = this.tagName.toLowerCase();
+    const $a = $(`<a data-level="${level}" href="#${$h.attr("id")}">${$h.text()}</a>`);
+    $toc.append($a);
+    headings.push(this);
+  });
+
+  /* ---------------- Active TOC (IntersectionObserver) ---------------- */
+  const observer = new IntersectionObserver(
+    entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const id = entry.target.id;
+          $toc.find("a").removeClass("active");
+          $toc.find(`a[href="#${id}"]`).addClass("active");
+        }
+      });
+    },
+    { rootMargin: "-40% 0px -55% 0px" }
+  );
+
+  headings.forEach(h => observer.observe(h));
+
+  /* ---------------- Search + highlight ---------------- */
+  const marker = new Mark($article[0]);
+
+  $("#kb-search").on("input", function () {
+    const q = this.value.trim();
+    marker.unmark({
+      done: () => {
+        if (q.length > 1) {
+          marker.mark(q);
+        }
+      }
     });
   });
 
-  /* ---------- COPY CODE ---------- */
-  document.querySelectorAll(".code").forEach(block => {
-    const btn = document.createElement("button");
-    btn.textContent = "Copy";
-    btn.style.cssText = `
-      position:absolute;top:8px;right:8px;
-      border:none;border-radius:6px;
-      padding:4px 8px;font-size:12px;
-      cursor:pointer;
-    `;
-    btn.onclick = () => {
-      navigator.clipboard.writeText(block.innerText);
-      btn.textContent = "Copied!";
-      setTimeout(() => (btn.textContent = "Copy"), 1200);
-    };
-    block.appendChild(btn);
+  /* ---------------- External links ---------------- */
+  $("a[href^='http']").attr({
+    target: "_blank",
+    rel: "noopener"
   });
 
-  /* ---------- EXTERNAL LINKS ---------- */
-  document.querySelectorAll("a[href^='http']").forEach(a => {
-    a.target = "_blank";
-    a.rel = "noopener";
-  });
-
-  /* ---------- IMAGE ZOOM ---------- */
-  document.querySelectorAll("figure.image img").forEach(img => {
-    img.style.cursor = "zoom-in";
-    img.onclick = () => window.open(img.src, "_blank");
-  });
-
-  /* ---------- SMOOTH SCROLL ---------- */
-  document.querySelectorAll("a[href^='#']").forEach(a => {
-    a.onclick = e => {
-      e.preventDefault();
-      document.querySelector(a.getAttribute("href"))?.scrollIntoView({
-        behavior: "smooth"
-      });
-    };
+  /* ---------------- Image click zoom ---------------- */
+  $article.find("img").css("cursor", "zoom-in").on("click", function () {
+    window.open(this.src, "_blank");
   });
 });
